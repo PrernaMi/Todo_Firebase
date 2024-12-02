@@ -5,6 +5,10 @@ import 'package:todo_firebase/app_const/color_const.dart';
 import 'package:todo_firebase/models/todo_model.dart';
 
 class HomePage extends StatefulWidget {
+  String pageView;
+
+  HomePage({required this.pageView});
+
   @override
   State<HomePage> createState() => _HomePageState();
 }
@@ -33,25 +37,6 @@ class _HomePageState extends State<HomePage> {
     mqData = MediaQuery.of(context);
     return Scaffold(
       resizeToAvoidBottomInset: false,
-      appBar: AppBar(
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              "Task Tracker",
-              style: TextStyle(
-                  fontFamily: 'AppBar',
-                  color: ColorConst().mColor[0],
-                  fontWeight: FontWeight.bold),
-            ),
-            Image.asset(
-              "assets/icons/todo_ic.png",
-              width: 40,
-            )
-          ],
-        ),
-        centerTitle: true,
-      ),
       body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
           stream: collections.snapshots(),
           builder: (_, snapshots) {
@@ -60,76 +45,9 @@ class _HomePageState extends State<HomePage> {
             }
             if (snapshots.hasData) {
               return snapshots.data!.docs.isNotEmpty
-                  ? ListView.builder(
-                      itemCount: snapshots.data!.docs.length,
-                      itemBuilder: (_, index) {
-                        return SizedBox(
-                          height: mqData!.size.height * 0.13,
-                          child: Card(
-                            child: CheckboxListTile(
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(15)),
-                              title: Text(
-                                  snapshots.data!.docs[index].data()['title']),
-                              value:
-                                  snapshots.data!.docs[index].data()['isComp'],
-                              onChanged: (bool? value) {
-                                isChecked = value!;
-                                collections
-                                    .doc(snapshots.data!.docs[index].id)
-                                    .update(TodoModel(
-                                            title: snapshots.data!.docs[index]
-                                                .data()['title'],
-                                            desc: snapshots.data!.docs[index]
-                                                .data()['desc'],
-                                            assignAt: snapshots
-                                                .data!.docs[index]
-                                                .data()['assignAt'],
-                                            isCompleted: isChecked,
-                                            completeAt: snapshots
-                                                .data!.docs[index]
-                                                .data()['completeAt'],
-                                            priority: snapshots
-                                                .data!.docs[index]
-                                                .data()['priority'])
-                                        .toMap());
-                                setState(() {});
-                              },
-
-                              tileColor: snapshots.data!.docs[index]
-                                          .data()['isComp'] ==
-                                      false
-                                  ? Colors.blue.shade200
-                                  : Colors.green.shade200,
-                              subtitle: Text(
-                                  snapshots.data!.docs[index].data()['desc']),
-                              secondary: Column(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceEvenly,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                      "Assign At: ${snapshots.data!.docs[index].data()['assignAt']}"),
-                                  Text(
-                                      "Complete At: ${snapshots.data!.docs[index].data()['completeAt']}"),
-                                  Icon(
-                                    Icons.remove_circle,
-                                    color: snapshots.data!.docs[index]
-                                                .data()['priority'] ==
-                                            1
-                                        ? Colors.green
-                                        : Colors.red,
-                                  ),
-                                ],
-                              ),
-                              activeColor: Colors.blue,
-                              checkColor: Colors.white,
-                              controlAffinity: ListTileControlAffinity
-                                  .leading, // Position of the checkbox
-                            ),
-                          ),
-                        );
-                      })
+                  ? widget.pageView == 'Open'
+                      ? _listView(snapshots,false)
+                      : _listView(snapshots, true)
                   : Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -168,23 +86,117 @@ class _HomePageState extends State<HomePage> {
             }
             return Container();
           }),
-      floatingActionButton: FloatingActionButton(
-        shape: CircleBorder(),
-        splashColor: ColorConst().mColor[0],
-        hoverColor: ColorConst().mColor[0],
-        backgroundColor: ColorConst().mColor[0],
-        elevation: 10,
-        onPressed: () {
-          showModalBottomSheet(
-              context: (context),
-              builder: (_) {
-                return _bottomSheetContent(context: context);
-              });
-        },
-        child: Icon(
-          Icons.add,
-          color: Colors.white,
-        ),
+      floatingActionButton: _floatingButton(),
+    );
+  }
+  Widget _listView(AsyncSnapshot<QuerySnapshot<Map<String, dynamic>>> snapshots,bool flag){
+  var collections = fireStore.collection("todos");
+    return ListView.builder(
+        itemCount: snapshots.data!.docs.length,
+        itemBuilder: (_, index) {
+          return snapshots.data!.docs[index]
+              .data()['isComp'] ==
+              flag
+              ? SizedBox(
+            height: mqData!.size.height * 0.16,
+            child: Card(
+              child: CheckboxListTile(
+                shape: RoundedRectangleBorder(
+                    borderRadius:
+                    BorderRadius.circular(15)),
+                title: Text(
+                  snapshots.data!.docs[index]
+                      .data()['title'],
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold),
+                ),
+                value: snapshots.data!.docs[index]
+                    .data()['isComp'],
+                onChanged: (bool? value) {
+                  isChecked = value!;
+                  collections
+                      .doc(snapshots
+                      .data!.docs[index].id)
+                      .update(TodoModel(
+                      title: snapshots.data!.docs[index]
+                          .data()['title'],
+                      desc: snapshots.data!.docs[index]
+                          .data()['desc'],
+                      assignAt: snapshots
+                          .data!.docs[index]
+                          .data()['assignAt'],
+                      isCompleted: isChecked,
+                      completeAt: snapshots
+                          .data!.docs[index]
+                          .data()['completeAt'],
+                      priority: snapshots
+                          .data!.docs[index]
+                          .data()['priority'])
+                      .toMap());
+                  setState(() {});
+                },
+                secondary: Column(
+                  mainAxisAlignment:
+                  MainAxisAlignment.spaceEvenly,
+                  children: [
+                    Icon(
+                      Icons.remove_circle,
+                      color: snapshots.data!.docs[index]
+                          .data()['priority'] ==
+                          1
+                          ? Colors.green
+                          : Colors.red,
+                    ),
+                    InkWell(
+                      onTap: () {
+                        collections
+                            .doc(snapshots
+                            .data!.docs[index].id)
+                            .delete();
+                        setState(() {});
+                      },
+                      child: Icon(
+                        Icons.delete,
+                        color: Colors.red,
+                      ),
+                    ),
+                  ],
+                ),
+                tileColor: snapshots.data!.docs[index]
+                    .data()['isComp'] ==
+                    false
+                    ? Colors.blue.shade200
+                    : Colors.green.shade200,
+                subtitle:
+                _subTitleContent(snapshots, index),
+                activeColor: Colors.blue,
+                checkColor: Colors.white,
+                controlAffinity: ListTileControlAffinity
+                    .leading, // Position of the checkbox
+              ),
+            ),
+          )
+              : Container();
+        });
+}
+
+  Widget _floatingButton() {
+    return FloatingActionButton(
+      shape: const CircleBorder(),
+      splashColor: ColorConst().mColor[0],
+      hoverColor: ColorConst().mColor[0],
+      backgroundColor: ColorConst().mColor[0],
+      elevation: 10,
+      onPressed: () {
+        showModalBottomSheet(
+            context: (context),
+            builder: (_) {
+              return _bottomSheetContent(context: context);
+            });
+      },
+      child: Icon(
+        Icons.add,
+        color: Colors.white,
       ),
     );
   }
@@ -316,6 +328,10 @@ class _HomePageState extends State<HomePage> {
                                         .format(date)
                                         .toString())
                                 .toMap());
+                            titleController.clear();
+                            descController.clear();
+                            dateController.clear();
+                            selectedPriorityNumber = null;
                             setState(() {});
                             Navigator.pop(context);
                           }
@@ -334,12 +350,32 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Color getBackGroudColor(int priority) {
-    if (priority == 1) {
-      return Colors.blue;
-    } else if (priority == 2) {
-      return Colors.redAccent;
-    }
-    return Colors.orange;
+  Widget _subTitleContent(
+      AsyncSnapshot<QuerySnapshot<Map<String, dynamic>>> snapshots, int index) {
+    return SizedBox(
+      height: 70,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              child: Text(snapshots.data!.docs[index].data()['desc']),
+            ),
+          ),
+          Row(
+            children: [
+              Icon(Icons.calendar_month),
+              SizedBox(
+                width: 3,
+              ),
+              Text(
+                snapshots.data!.docs[index].data()['completeAt'],
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+              ),
+            ],
+          )
+        ],
+      ),
+    );
   }
 }

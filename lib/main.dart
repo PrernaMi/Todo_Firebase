@@ -2,6 +2,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:todo_firebase/firebase_options.dart';
 import 'package:todo_firebase/screens/home_page.dart';
+import 'package:todo_firebase/screens/initil_screen.dart';
 
 void main() async{
   //it hold running until this this process finished
@@ -22,7 +23,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: HomePage(),
+      home: InitialScreen(),
     );
   }
 }
